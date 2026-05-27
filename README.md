@@ -178,22 +178,3 @@ Run backup:
 
 ```bash
 bash scripts/backup.sh
-```
-
-## Resume Bullet
-
-Built and administered a self-hosted Raspberry Pi home server using Linux, Docker, and Docker Compose. Deployed containerized services including Pi-hole for DNS-based ad blocking, Jellyfin for media streaming, Portainer for container management, Grafana and Prometheus for monitoring, and Nginx Proxy Manager for reverse proxy configuration. Automated maintenance tasks with Bash scripts for backups, updates, and health checks.
-
-## Screenshots to Add
-
-Add screenshots to the `screenshots/` folder after setup:
-
-- Pi-hole dashboard
-- Jellyfin dashboard
-- Portainer container list
-- Grafana dashboard
-- Nginx Proxy Manager dashboard
-
-## Notes
-
-Do not commit your real `.env` file, passwords, API keys, or private network information to GitHub.
