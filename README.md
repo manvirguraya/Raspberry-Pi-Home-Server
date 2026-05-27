@@ -116,13 +116,23 @@ Edit the `.env` file and change the passwords (Use the .env.example as a templat
 nano .env
 ```
 
-### 5. Start the Services
+### 5. Make Scripts Executable
+
+Before running the management scripts, make them executable:
+
+```bash
+chmod +x scripts/*.sh
+```
+
+You only need to do this once after cloning or downloading the repository.
+
+### 6. Start the Services
 
 ```bash
 docker compose up -d
 ```
 
-### 6. Check Running Containers
+### 7. Check Running Containers
 
 ```bash
 docker ps
