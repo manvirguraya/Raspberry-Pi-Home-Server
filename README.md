@@ -55,7 +55,7 @@ raspberry-pi-home-server/
 |
 |-- README.md
 |-- docker-compose.yml
-|-- .env.example
+|-- .env
 |-- .gitignore
 |
 |-- configs/
@@ -68,7 +68,6 @@ raspberry-pi-home-server/
 |-- docs/
 |   |-- network-setup.md
 |   |-- troubleshooting.md
-|   |-- resume-bullets.md
 |
 |-- scripts/
 |   |-- backup.sh
@@ -108,10 +107,10 @@ cd raspberry-pi-home-server
 ### 4. Create the Environment File
 
 ```bash
-cp .env.example .env
+cp .env
 ```
 
-Edit the `.env` file and change the passwords.
+Edit the `.env` file and change the passwords (Use the example env.txt as a template).
 
 ```bash
 nano .env
