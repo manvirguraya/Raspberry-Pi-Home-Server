@@ -1,17 +1,22 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 
-set -e
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT_DIR"
 
-BACKUP_DIR="$HOME/pi-server-backups"
-DATE=$(date +"%Y-%m-%d_%H-%M-%S")
-PROJECT_DIR=$(pwd)
+BACKUP_DIR="./backups"
+DATE="$(date +"%Y-%m-%d_%H-%M-%S")"
+BACKUP_FILE="$BACKUP_DIR/home-server-backup-$DATE.tar.gz"
 
 mkdir -p "$BACKUP_DIR"
 
-echo "Creating backup..."
-tar -czf "$BACKUP_DIR/home-server-backup-$DATE.tar.gz" \
-  --exclude="./media" \
-  --exclude="./data/jellyfin/cache" \
-  ./data ./configs .env docker-compose.yml
+echo "Creating backup at $BACKUP_FILE..."
 
-echo "Backup saved to: $BACKUP_DIR/home-server-backup-$DATE.tar.gz"
+tar --exclude="$BACKUP_DIR" -czf "$BACKUP_FILE" \
+  docker-compose.yml \
+  .env \
+  configs \
+  data
+
+echo "Backup complete:"
+ls -lh "$BACKUP_FILE"

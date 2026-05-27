@@ -1,16 +1,23 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 
-echo "Updating system packages..."
-sudo apt update && sudo apt upgrade -y
+echo "Updating package list..."
+sudo apt update
 
-echo "Installing Docker..."
+echo "Installing required packages..."
+sudo apt install -y ca-certificates curl gnupg git
+
+echo "Installing Docker using the official convenience script..."
 curl -fsSL https://get.docker.com | sh
 
-echo "Adding current user to docker group..."
-sudo usermod -aG docker $USER
+echo "Adding current user to the docker group..."
+sudo usermod -aG docker "$USER"
 
 echo "Installing Docker Compose plugin..."
-sudo apt install docker-compose-plugin -y
+sudo apt install -y docker-compose-plugin
 
-echo "Docker installation complete."
-echo "Please reboot or log out and back in for group changes to apply."
+echo "Checking Docker versions..."
+docker --version || true
+docker compose version || true
+
+echo "Docker install complete. Log out and back in, or reboot, before running Docker without sudo."

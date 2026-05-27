@@ -1,6 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 
-echo "Stopping Docker services..."
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT_DIR"
+
+echo "Stopping home server services..."
 docker compose down
 
-echo "Services stopped."
+echo "Services stopped. Persistent data remains in ./data."

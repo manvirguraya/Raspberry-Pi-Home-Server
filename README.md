@@ -1,35 +1,38 @@
-# Raspberry Pi Home Server
+# Self-Hosted Home Server
 
-A self-hosted Raspberry Pi server that runs network and media services using Docker. This project includes Pi-hole for network-wide ad blocking, Jellyfin for media streaming, Portainer for container management, Grafana and Prometheus for monitoring, and Nginx Proxy Manager for reverse proxy management.
+A self-hosted Linux home server that runs network, media, monitoring, and management services using Docker. This project can run on a Raspberry Pi, leftover laptop, mini PC, desktop, or Linux virtual machine.
+
+The stack includes Pi-hole for DNS ad blocking, Plex Media Server for personal media streaming, Portainer for container management, Prometheus and Grafana for monitoring, cAdvisor and Node Exporter for metrics, and Nginx Proxy Manager for reverse proxy management.
 
 ## Project Description
 
-This project demonstrates how a Raspberry Pi can be used as a small home server for networking, media, monitoring, and self-hosted services. It uses Docker Compose to run each service in its own container, making the setup easier to deploy, update, and manage.
+This project demonstrates how unused hardware can be repurposed into a small home server. Docker Compose runs each service in its own container, making the setup easier to deploy, update, monitor, and back up.
 
 ## Features
 
 - Network-wide ad blocking with Pi-hole
-- Local media streaming with Jellyfin
+- Personal media streaming with Plex Media Server
 - Docker container management with Portainer
-- System monitoring dashboards with Grafana
-- Metrics collection with Prometheus
+- System and container monitoring with Prometheus, Grafana, Node Exporter, and cAdvisor
 - Reverse proxy management with Nginx Proxy Manager
-- Automated updates, backups, and health checks using Bash scripts
-- Secure remote administration through SSH or optional VPN tools like Tailscale
+- Automated setup, updates, backups, and health checks using Bash scripts
+- Environment variable template using `.env.example`
+- Persistent service data stored under `data/`
 
 ## Technologies Used
 
-- Raspberry Pi OS
-- Linux
+- Linux / Raspberry Pi OS / Ubuntu Server
 - Docker
 - Docker Compose
 - Bash
 - YAML
 - Pi-hole
-- Jellyfin
+- Plex
 - Portainer
-- Grafana
 - Prometheus
+- Grafana
+- Node Exporter
+- cAdvisor
 - Nginx Proxy Manager
 
 ## Architecture
@@ -39,19 +42,21 @@ Internet
    |
 Router
    |
-Raspberry Pi
+Home Server
    |-- Pi-hole DNS Ad Blocking
-   |-- Jellyfin Media Server
+   |-- Plex Media Server
    |-- Portainer Docker Management
-   |-- Grafana Monitoring Dashboard
    |-- Prometheus Metrics Collection
+   |-- Grafana Monitoring Dashboard
+   |-- Node Exporter Host Metrics
+   |-- cAdvisor Container Metrics
    |-- Nginx Proxy Manager Reverse Proxy
 ```
 
 ## Repository Structure
 
 ```txt
-raspberry-pi-home-server/
+self-hosted-home-server/
 |
 |-- README.md
 |-- docker-compose.yml
@@ -62,6 +67,15 @@ raspberry-pi-home-server/
 |   |-- prometheus/
 |   |   |-- prometheus.yml
 |   |
+|   |-- grafana/
+|   |   |-- provisioning/
+|   |   |   |-- datasources/
+|   |   |   |   |-- prometheus.yml
+|   |   |   |-- dashboards/
+|   |   |       |-- dashboards.yml
+|   |   |-- dashboards/
+|   |       |-- home-server-overview.json
+|   |
 |   |-- nginx-proxy-manager/
 |       |-- README.md
 |
@@ -70,8 +84,12 @@ raspberry-pi-home-server/
 |   |-- troubleshooting.md
 |
 |-- scripts/
-|   |-- backup.sh
+|   |-- install-docker.sh
+|   |-- setup.sh
+|   |-- start-services.sh
+|   |-- stop-services.sh
 |   |-- update-containers.sh
+|   |-- backup.sh
 |   |-- healthcheck.sh
 |
 |-- screenshots/
@@ -80,89 +98,168 @@ raspberry-pi-home-server/
 
 ## Setup Instructions
 
-### 1. Install Docker
+### 1. Prepare the Server
 
-```bash
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-sudo usermod -aG docker $USER
-```
+Install a Linux-based OS on your Raspberry Pi, old laptop, mini PC, desktop, or VM.
 
-Log out and back in after running the commands above.
+Recommended options:
 
-### 2. Install Docker Compose
+- Raspberry Pi OS 64-bit
+- Ubuntu Server
+- Debian
+- Ubuntu Desktop if you want a GUI
+
+Make sure the device has internet access.
+
+### 2. Install Git
 
 ```bash
 sudo apt update
-sudo apt install docker-compose-plugin -y
+sudo apt install git -y
 ```
 
 ### 3. Clone the Repository
 
 ```bash
-git clone https://github.com/YOUR-USERNAME/raspberry-pi-home-server.git
-cd raspberry-pi-home-server
+git clone https://github.com/YOUR-USERNAME/self-hosted-home-server.git
+cd self-hosted-home-server
 ```
 
-### 4. Create the Environment File
+### 4. Install Docker
 
 ```bash
-cp .env
+chmod +x scripts/*.sh
+./scripts/install-docker.sh
 ```
 
-Edit the `.env` file and change the passwords (Use the .env.example as a template).
+After Docker installs, log out and back in or reboot:
+
+```bash
+sudo reboot
+```
+
+Then return to the project folder.
+
+### 5. Run Project Setup
+
+```bash
+./scripts/setup.sh
+```
+
+This script creates required folders, copies `.env.example` to `.env` if needed, makes scripts executable, and validates the Docker Compose file.
+
+### 6. Edit Environment Variables
 
 ```bash
 nano .env
 ```
 
-### 5. Make Scripts Executable
+Change the default passwords before starting services.
 
-Before running the management scripts, make them executable:
+Example:
 
-```bash
-chmod +x scripts/*.sh
+```env
+TZ=America/Chicago
+PUID=1000
+PGID=1000
+PLEX_CLAIM=
+PIHOLE_WEBPASSWORD=change_this_password
+GRAFANA_ADMIN_USER=admin
+GRAFANA_ADMIN_PASSWORD=change_this_password
 ```
 
-You only need to do this once after cloning or downloading the repository.
+### 7. Start the Services
 
-### 6. Start the Services
+```bash
+./scripts/start-services.sh
+```
+
+This runs:
 
 ```bash
 docker compose up -d
 ```
 
-### 7. Check Running Containers
+Docker will download and start all containers.
+
+### 8. Check Running Containers
 
 ```bash
-docker ps
+docker compose ps
+```
+
+Or run:
+
+```bash
+./scripts/healthcheck.sh
 ```
 
 ## Service URLs
 
-Replace `raspberrypi.local` with your Raspberry Pi IP address if needed.
+Replace `SERVER-IP` with your device's local IP address.
 
 | Service | URL |
 |---|---|
-| Pi-hole | `http://raspberrypi.local/admin` |
-| Jellyfin | `http://raspberrypi.local:8096` |
-| Portainer | `https://raspberrypi.local:9443` |
-| Grafana | `http://raspberrypi.local:3000` |
-| Prometheus | `http://raspberrypi.local:9090` |
-| Nginx Proxy Manager | `http://raspberrypi.local:81` |
+| Pi-hole | `http://SERVER-IP:8080/admin` |
+| Plex | `http://SERVER-IP:32400/web` |
+| Portainer | `https://SERVER-IP:9443` |
+| Grafana | `http://SERVER-IP:3000` |
+| Prometheus | `http://SERVER-IP:9090` |
+| cAdvisor | `http://SERVER-IP:8081` |
+| Nginx Proxy Manager | `http://SERVER-IP:81` |
+
+## Default Logins
+
+### Grafana
+
+Username and password come from your `.env` file:
+
+```env
+GRAFANA_ADMIN_USER=admin
+GRAFANA_ADMIN_PASSWORD=change_this_password
+```
+
+### Pi-hole
+
+The admin password comes from:
+
+```env
+PIHOLE_WEBPASSWORD=change_this_password
+```
+
+### Nginx Proxy Manager
+
+Nginx Proxy Manager creates its own first-login credentials. After logging in, change the default account immediately.
+
+
+## Plex First-Time Setup
+
+Plex uses your personal Plex account to claim and manage the server. During first setup, open:
+
+```txt
+http://SERVER-IP:32400/web
+```
+
+You can optionally add a temporary claim token in `.env` using `PLEX_CLAIM`. Claim tokens can be generated from Plex and expire quickly, so leaving it blank is okay if you claim the server through the browser setup.
+
+For file permissions, `PUID` and `PGID` in `.env` should usually match your Linux user. You can check them with:
+
+```bash
+id
+```
 
 ## Useful Commands
 
 Start services:
 
 ```bash
-docker compose up -d
+./scripts/start-services.sh
 ```
 
 Stop services:
 
 ```bash
-docker compose down
+./scripts/stop-services.sh
 ```
 
 View logs:
@@ -174,16 +271,76 @@ docker compose logs -f
 Update containers:
 
 ```bash
-bash scripts/update-containers.sh
+./scripts/update-containers.sh
 ```
 
 Run health check:
 
 ```bash
-bash scripts/healthcheck.sh
+./scripts/healthcheck.sh
 ```
 
 Run backup:
 
 ```bash
-bash scripts/backup.sh
+./scripts/backup.sh
+```
+
+## Pi-hole Network Setup
+
+Pi-hole will run after `docker compose up -d`, but network-wide ad blocking requires one extra network step.
+
+Set your router's DNS server to your home server's local IP address. If your router does not allow custom DNS, manually set DNS on each device to the server IP.
+
+Example:
+
+```txt
+Router DNS Server: 192.168.1.50
+```
+
+The exact router menu varies by manufacturer.
+
+## Plex Media Setup
+
+Place your own personal media files in the local `media/` folder or mount an external drive to that path. Do not upload media files to GitHub.
+
+Example:
+
+```txt
+media/
+|-- movies/
+|-- shows/
+|-- music/
+```
+
+Plex reads these folders inside the container as:
+
+```txt
+/movies
+/tv
+/music
+```
+
+When creating Plex libraries, choose `/movies`, `/tv`, or `/music` as the library path.
+
+## Grafana Monitoring Setup
+
+Grafana is automatically provisioned with Prometheus as a data source and a starter dashboard named `Home Server Overview`.
+
+Prometheus collects metrics from:
+
+- Prometheus itself
+- Node Exporter for host system metrics
+- cAdvisor for Docker container metrics
+
+## What Is Not Automated
+
+This repository automates the Docker-based home server stack, but it does not automate:
+
+- Flashing Raspberry Pi OS
+- Router DNS configuration
+- Domain name registration
+- SSL certificate setup in Nginx Proxy Manager
+- Adding personal media files
+
+Those steps depend on your hardware, router, and network.

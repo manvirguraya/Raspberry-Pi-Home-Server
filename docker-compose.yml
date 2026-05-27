@@ -2,31 +2,37 @@ services:
   pihole:
     image: pihole/pihole:latest
     container_name: pihole
+    hostname: pihole
     restart: unless-stopped
     environment:
       TZ: ${TZ}
-      WEBPASSWORD: ${PIHOLE_WEBPASSWORD}
+      FTLCONF_webserver_api_password: ${PIHOLE_WEBPASSWORD}
     volumes:
       - ./data/pihole/etc-pihole:/etc/pihole
       - ./data/pihole/etc-dnsmasq.d:/etc/dnsmasq.d
     ports:
       - "53:53/tcp"
       - "53:53/udp"
-      - "8080:80"
+      - "8080:80/tcp"
+    cap_add:
+      - NET_ADMIN
 
-  jellyfin:
-    image: jellyfin/jellyfin:latest
-    container_name: jellyfin
+  plex:
+    image: lscr.io/linuxserver/plex:latest
+    container_name: plex
     restart: unless-stopped
+    network_mode: host
     environment:
+      PUID: ${PUID}
+      PGID: ${PGID}
       TZ: ${TZ}
-      JELLYFIN_PublishedServerUrl: ${JELLYFIN_PublishedServerUrl}
+      VERSION: docker
+      PLEX_CLAIM: ${PLEX_CLAIM}
     volumes:
-      - ./data/jellyfin/config:/config
-      - ./data/jellyfin/cache:/cache
-      - ./media:/media
-    ports:
-      - "8096:8096"
+      - ./data/plex/config:/config
+      - ./media/movies:/movies
+      - ./media/tv:/tv
+      - ./media/music:/music
 
   portainer:
     image: portainer/portainer-ce:latest
@@ -36,17 +42,22 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./data/portainer:/data
     ports:
-      - "9443:9443"
+      - "9443:9443/tcp"
 
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
     restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
     volumes:
-      - ./configs/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./configs/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./data/prometheus:/prometheus
     ports:
-      - "9090:9090"
+      - "9090:9090/tcp"
 
   grafana:
     image: grafana/grafana:latest
@@ -55,10 +66,43 @@ services:
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: "false"
     volumes:
       - ./data/grafana:/var/lib/grafana
+      - ./configs/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./configs/grafana/dashboards:/var/lib/grafana/dashboards:ro
     ports:
-      - "3000:3000"
+      - "3000:3000/tcp"
+    depends_on:
+      - prometheus
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: unless-stopped
+    command:
+      - "--path.rootfs=/host"
+    pid: host
+    volumes:
+      - "/:/host:ro,rslave"
+    ports:
+      - "9100:9100/tcp"
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    restart: unless-stopped
+    privileged: true
+    devices:
+      - /dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    ports:
+      - "8081:8080/tcp"
 
   nginx-proxy-manager:
     image: jc21/nginx-proxy-manager:latest
@@ -68,6 +112,10 @@ services:
       - ./data/nginx-proxy-manager/data:/data
       - ./data/nginx-proxy-manager/letsencrypt:/etc/letsencrypt
     ports:
-      - "80:80"
-      - "81:81"
-      - "443:443"
+      - "80:80/tcp"
+      - "81:81/tcp"
+      - "443:443/tcp"
+
+networks:
+  default:
+    name: home-server-network

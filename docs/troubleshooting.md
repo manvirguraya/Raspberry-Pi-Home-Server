@@ -1,67 +1,102 @@
 # Troubleshooting
 
-## Check Docker Status
+## Docker Permission Denied
+
+If Docker says permission denied, reboot after installing Docker:
 
 ```bash
-systemctl status docker
+sudo reboot
 ```
 
-## Check Running Containers
+Or temporarily run Docker with sudo:
 
 ```bash
-docker ps
+sudo docker compose ps
 ```
 
-## View Container Logs
+## Missing .env File
+
+Create it from the template:
 
 ```bash
-docker compose logs -f
+cp .env.example .env
+nano .env
 ```
 
-## Restart Services
+## Scripts Will Not Run
+
+Make scripts executable:
 
 ```bash
-docker compose restart
+chmod +x scripts/*.sh
 ```
 
-## Restart One Service
+## Port Already In Use
+
+Check what is using a port:
 
 ```bash
-docker compose restart pihole
+sudo lsof -i :80
+sudo lsof -i :53
 ```
 
-## Stop All Services
+If port 80 conflicts, change this in `docker-compose.yml`:
+
+```yaml
+ports:
+  - "8088:80"
+```
+
+Then access that service using port `8088` instead.
+
+## Pi-hole DNS Does Not Work
+
+Check that Pi-hole is running:
 
 ```bash
-docker compose down
+docker compose ps pihole
 ```
 
-## Start All Services
+Check that port 53 is open:
 
 ```bash
-docker compose up -d
+sudo lsof -i :53
 ```
 
-## Pi-hole Web Interface Conflict
+Make sure your router or device DNS points to the server IP.
 
-This setup maps Pi-hole to port `8080` instead of port `80` because Nginx Proxy Manager uses port `80`.
+## Grafana Has No Data
 
-Pi-hole URL:
+Check Prometheus targets:
 
 ```txt
-http://raspberrypi.local:8080/admin
+http://SERVER-IP:9090/targets
 ```
 
-## Grafana Login
+The Prometheus, node-exporter, and cadvisor targets should be UP.
 
-The Grafana username and password are set inside the `.env` file.
+## Plex Cannot See Media
 
-## Permission Issues
+Make sure media files are inside `media/movies`, `media/tv`, or `media/music`, or that your external drive is mounted to one of those paths.
 
-If Docker commands require sudo, add your user to the Docker group:
+Check permissions:
 
 ```bash
-sudo usermod -aG docker $USER
+ls -la media
 ```
 
-Then log out and back in.
+## Reset Everything
+
+Stop containers:
+
+```bash
+./scripts/stop-services.sh
+```
+
+Delete generated data if you want a clean reset:
+
+```bash
+rm -rf data
+./scripts/setup.sh
+./scripts/start-services.sh
+```
