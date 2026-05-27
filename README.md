@@ -110,7 +110,7 @@ cd raspberry-pi-home-server
 cp .env
 ```
 
-Edit the `.env` file and change the passwords (Use the example env.txt as a template).
+Edit the `.env` file and change the passwords (Use the .env.example as a template).
 
 ```bash
 nano .env
